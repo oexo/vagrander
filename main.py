@@ -10,10 +10,14 @@ VAGRANT_TEMPLATE_NAME = "VTemplate.txt"
 def open_template_file(catalog=VAGRANT_CATALOG, file=VAGRANT_TEMPLATE_NAME):
     with open(catalog + file, "r") as vagrant_template_file:
         return vagrant_template_file.read()
+    # TODO: переделать вагранд-файл в шаблон j2
 
 
 def create_vagrant_from_template(hostname, ip):
     print("hello world")
+    #TODO: проработать структура инвентори-файла (должен быть like as ансибл)
+    #TODO: компилировать вагрант-файл на основе шаблона и инвентори
+
 
 
 def main():
