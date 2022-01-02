@@ -27,12 +27,8 @@ def open_template_file(catalog=VAGRANT_CATALOG, file=VAGRANT_TEMPLATE_NAME):
 
 def create_vagrant_from_template(hostname, ip):
     print("hello world")
-    #TODO: проработать структура инвентори-файла (должен быть like as ансибл)
     #TODO: компилировать вагрант-файл на основе шаблона и инвентори
-
-
-def validate_inventory(inventory):
-    validate(inventory, yaml.safe_load(SCHEMA))
+    #TODO: Написать цикл, из файла инвентори вытащить данные по каждой vm (1 цикл для nodes; 2 цикл для templates)
 
 
 def is_json_valid(json_data: dict, json_schema: dict) -> bool:
