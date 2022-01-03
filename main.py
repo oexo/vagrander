@@ -3,7 +3,8 @@ from pathlib import Path
 import jsonschema
 from jsonschema import validate
 import yaml
-import json
+from jinja2 import Environment
+from jinja2 import FileSystemLoader
 
 SCHEMA = {
     "type": "object",
@@ -14,21 +15,13 @@ SCHEMA = {
 VAGRANT_CATALOG = "/Users/dmitriygarbovskiy/Learning/vagrant/"
 VAGRANT_TEMPLATE_NAME = "VTemplate.txt"
 MAIN_DIR = os.path.dirname(os.path.realpath(__file__))
+INVENTORY_FILENAME = "inventory.yaml"
+TEMPLATE_FOLDER = "templates"
+TEMPLATE_FILENAME = "template.j2"
+J2_ENVIRONMENT = Environment(loader=FileSystemLoader(TEMPLATE_FOLDER), trim_blocks=True)
 
-with open(Path(MAIN_DIR + "/" + "./inventory.yaml"), "r") as inventory:
+with open(Path(MAIN_DIR + "/" + INVENTORY_FILENAME), "r") as inventory:
     INVENTORY = yaml.safe_load(inventory)
-
-
-def open_template_file(catalog=VAGRANT_CATALOG, file=VAGRANT_TEMPLATE_NAME):
-    with open(catalog + file, "r") as vagrant_template_file:
-        return vagrant_template_file.read()
-    # TODO: переделать вагранд-файл в шаблон j2
-
-
-def create_vagrant_from_template(hostname, ip):
-    print("hello world")
-    #TODO: компилировать вагрант-файл на основе шаблона и инвентори
-    #TODO: Написать цикл, из файла инвентори вытащить данные по каждой vm (1 цикл для nodes; 2 цикл для templates)
 
 
 def is_json_valid(json_data: dict, json_schema: dict) -> bool:
@@ -45,12 +38,52 @@ def is_json_valid(json_data: dict, json_schema: dict) -> bool:
     return True
 
 
-def main():
-    # for data in INVENTORY:
-    #     print(INVENTORY[data])
+def get_nodes_from_inventory(inventory=INVENTORY):
+    n = None
+    for nodes in inventory["nodes"]:
+        yield nodes
 
-    print(INVENTORY)
-    print(is_json_valid(INVENTORY, SCHEMA))
+
+def get_templates_from_inventory(inventory=INVENTORY):
+    n = None
+    for templates in inventory["templates"]:
+        yield templates
+
+
+def render_template(unit: dict, template=TEMPLATE_FILENAME, j2_env=J2_ENVIRONMENT):
+    template = j2_env.get_template(template)
+
+    rendered_template = template.render(hostname=unit["hostname"],
+                                        internal_ip=unit["internal_ip"],
+                                        external_ip=unit["external_ip"],
+                                        memory=unit["memory"],
+                                        cpu=unit["cpu"])
+
+    return rendered_template
+
+
+def create_empty_file(filename: Path):
+    with open(filename, "w"):
+        pass
+
+
+def save_template_to_file(filename: Path, text):
+    with open(filename, "a+") as template:
+        template.write(text)
+
+
+def main():
+
+    if is_json_valid(INVENTORY, SCHEMA):
+        for node in get_nodes_from_inventory():
+            if not os.path.exists(VAGRANT_CATALOG + node["hostname"]):
+                create_empty_file(Path(VAGRANT_CATALOG + node["hostname"]))
+            save_template_to_file(Path(VAGRANT_CATALOG + node["hostname"]), render_template(node))
+    else:
+        print(f" Inventory file {Path(MAIN_DIR + '/' + INVENTORY_FILENAME)} is not valid")
+
+    # TODO: сохранить отрендеренный шаблон в файл в соответствующем каталоге (создать каталог)
+    # TODO: argparse и команды (vagrant up, destroy, syspend)
 
 
 if __name__ == '__main__':
