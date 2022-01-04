@@ -72,17 +72,26 @@ def save_template_to_file(filename: Path, text):
         template.write(text)
 
 
+def create_folder(folder: Path):
+    # try:
+    os.mkdir(folder)
+    # except:
+    #     return False
+    return True
+
+
 def main():
 
     if is_json_valid(INVENTORY, SCHEMA):
         for node in get_nodes_from_inventory():
             if not os.path.exists(VAGRANT_CATALOG + node["hostname"]):
-                create_empty_file(Path(VAGRANT_CATALOG + node["hostname"]))
-            save_template_to_file(Path(VAGRANT_CATALOG + node["hostname"]), render_template(node))
+                create_folder(Path(VAGRANT_CATALOG + node["hostname"]))
+            if not os.path.exists(VAGRANT_CATALOG + node["hostname"] + "/" + "Vagrantfile"):
+                create_empty_file(Path(VAGRANT_CATALOG + node["hostname"] + "/" + "Vagrantfile"))
+            save_template_to_file(Path(VAGRANT_CATALOG + node["hostname"] + "/" + "Vagrantfile"), render_template(node))
     else:
         print(f" Inventory file {Path(MAIN_DIR + '/' + INVENTORY_FILENAME)} is not valid")
 
-    # TODO: сохранить отрендеренный шаблон в файл в соответствующем каталоге (создать каталог)
     # TODO: argparse и команды (vagrant up, destroy, syspend)
 
 
