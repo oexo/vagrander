@@ -1,17 +1,52 @@
 ---
 nodes:
-- hostname: "vm1"
+- hostname: "etcd0"
   internal_ip: "192.168.56.10"
   external_ip: 192.168.1.10
-  memory: 1024
+  memory: 256
   cpu: 1
 
-- hostname: "vm2"
+- hostname: "etcd1"
   internal_ip: "192.168.56.11"
   external_ip: 192.168.1.11
+  memory: 256
+  cpu: 1
+
+- hostname: "etcd2"
+  internal_ip: "192.168.56.12"
+  external_ip: 192.168.1.12
+  memory: 256
+  cpu: 1
+
+- hostname: "ha0"
+  internal_ip: "192.168.56.20"
+  external_ip: 192.168.1.20
+  memory: 256
+  cpu: 1
+
+- hostname: "ha1"
+  internal_ip: "192.168.56.21"
+  external_ip: 192.168.1.21
+  memory: 256
+  cpu: 1
+
+- hostname: "pg0"
+  internal_ip: "192.168.56.30"
+  external_ip: 192.168.1.30
   memory: 1024
   cpu: 1
 
+- hostname: "pg1"
+  internal_ip: "192.168.56.31"
+  external_ip: 192.168.1.31
+  memory: 1024
+  cpu: 1
+
+- hostname: "pg2"
+  internal_ip: "192.168.56.31"
+  external_ip: 192.168.1.31
+  memory: 1024
+  cpu: 1
 
 templates:
 - templatename: "etcd"

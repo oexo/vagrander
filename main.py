@@ -7,7 +7,6 @@ from jinja2 import Environment
 from jinja2 import FileSystemLoader
 import argparse
 import vagrant
-from vagrant_wrapper import up_vm, halt_vm, destroy_vm, status_vm
 
 SCHEMA = {
     "type": "object",
@@ -28,9 +27,9 @@ with open(Path(MAIN_DIR + "/" + INVENTORY_FILENAME), "r") as inventory:
 
 def get_args():
     parser = argparse.ArgumentParser(description='Vagrant wrapper')
-    parser.add_argument('action', metavar='N', type=str, nargs='+',
+    parser.add_argument('action', metavar='N', type=str,
                         help='action for vagrant')
-    parser.add_argument('vm', metavar='N', type=str, nargs='+',
+    parser.add_argument('vm', metavar='N', type=str,
                         help='vm name or "all"')
 
     return parser.parse_args()
@@ -89,7 +88,7 @@ def create_folder(folder: Path):
     os.mkdir(folder)
     # except:
     #     return False
-    return True
+    return 0
 
 
 def update_dst_vfiles():
@@ -106,32 +105,55 @@ def update_dst_vfiles():
         print(f" Inventory file {Path(MAIN_DIR + '/' + INVENTORY_FILENAME)} is not valid")
 
 
-def act_vagrant(action, vm):
+def act_vagrant(action, vfile_path):
 
-    print(action)
-    print(vm)
-    vm_folder = Path(VAGRANT_CATALOG + "/" + vm)
+    v1 = vagrant.Vagrant(vfile_path)
 
     if action == "up":
-        up_vm(vm_folder)
+        try:
+            v1.up()
+            act_vagrant("status", vfile_path)
+            return 0
+        except:
+            print(f"{vfile_path} UP Error")
+            return 1
     elif action == "halt":
-        halt_vm(vm_folder)
+        try:
+            v1.halt()
+            act_vagrant("status", vfile_path)
+            return 0
+        except:
+            act_vagrant("status", vfile_path)
+            return 1
     elif action == "destroy":
-        destroy_vm(vm_folder)
+        v1.destroy()
     elif action == "status":
-        status_vm(vm_folder)
+        print(f"{vfile_path} status:")
+        print(v1.status())
+
+
+def is_vm_exist(vm):
+    for node in get_nodes_from_inventory():
+        if node["hostname"] == vm:
+            return True
+    return False
 
 
 def main():
 
     args = get_args()
 
-    print(args.action)
-    print(args.vm)
-
-    update_dst_vfiles()
-
-    act_vagrant(args.action[0], args.vm[0])
+    if args.vm == "all" or is_vm_exist(args.vm):
+        update_dst_vfiles()
+        if args.vm == "all":
+            for vm in get_nodes_from_inventory():
+                vfile_path = VAGRANT_CATALOG + vm["hostname"]
+                act_vagrant(args.action, vfile_path)
+        else:
+            vfile_path = VAGRANT_CATALOG + args.vm
+            act_vagrant(args.action, vfile_path)
+    else:
+        print("There is no suitable VM for actions")
 
 
 if __name__ == '__main__':
