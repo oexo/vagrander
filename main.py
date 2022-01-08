@@ -5,11 +5,13 @@ from jsonschema import validate
 import yaml
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
+import argparse
+import vagrant
+from vagrant_wrapper import up_vm, halt_vm, destroy_vm, status_vm
 
 SCHEMA = {
     "type": "object",
     "required": ["nodes", "templates"]
-
 }
 
 VAGRANT_CATALOG = "/Users/dmitriygarbovskiy/Learning/vagrant/"
@@ -22,6 +24,16 @@ J2_ENVIRONMENT = Environment(loader=FileSystemLoader(TEMPLATE_FOLDER), trim_bloc
 
 with open(Path(MAIN_DIR + "/" + INVENTORY_FILENAME), "r") as inventory:
     INVENTORY = yaml.safe_load(inventory)
+
+
+def get_args():
+    parser = argparse.ArgumentParser(description='Vagrant wrapper')
+    parser.add_argument('action', metavar='N', type=str, nargs='+',
+                        help='action for vagrant')
+    parser.add_argument('vm', metavar='N', type=str, nargs='+',
+                        help='vm name or "all"')
+
+    return parser.parse_args()
 
 
 def is_json_valid(json_data: dict, json_schema: dict) -> bool:
@@ -68,7 +80,7 @@ def create_empty_file(filename: Path):
 
 
 def save_template_to_file(filename: Path, text):
-    with open(filename, "a+") as template:
+    with open(filename, "w+") as template:
         template.write(text)
 
 
@@ -80,19 +92,46 @@ def create_folder(folder: Path):
     return True
 
 
-def main():
-
+def update_dst_vfiles():
     if is_json_valid(INVENTORY, SCHEMA):
         for node in get_nodes_from_inventory():
-            if not os.path.exists(VAGRANT_CATALOG + node["hostname"]):
-                create_folder(Path(VAGRANT_CATALOG + node["hostname"]))
-            if not os.path.exists(VAGRANT_CATALOG + node["hostname"] + "/" + "Vagrantfile"):
-                create_empty_file(Path(VAGRANT_CATALOG + node["hostname"] + "/" + "Vagrantfile"))
-            save_template_to_file(Path(VAGRANT_CATALOG + node["hostname"] + "/" + "Vagrantfile"), render_template(node))
+            vm_folder = VAGRANT_CATALOG + node["hostname"]
+            vagrant_file = vm_folder + "/" + "Vagrantfile"
+            if not os.path.exists(vm_folder):
+                create_folder(Path(vm_folder))
+            if not os.path.exists(vagrant_file):
+                create_empty_file(Path(vagrant_file))
+            save_template_to_file(Path(vagrant_file), render_template(node))
     else:
         print(f" Inventory file {Path(MAIN_DIR + '/' + INVENTORY_FILENAME)} is not valid")
 
-    # TODO: argparse и команды (vagrant up, destroy, syspend)
+
+def act_vagrant(action, vm):
+
+    print(action)
+    print(vm)
+    vm_folder = Path(VAGRANT_CATALOG + "/" + vm)
+
+    if action == "up":
+        up_vm(vm_folder)
+    elif action == "halt":
+        halt_vm(vm_folder)
+    elif action == "destroy":
+        destroy_vm(vm_folder)
+    elif action == "status":
+        status_vm(vm_folder)
+
+
+def main():
+
+    args = get_args()
+
+    print(args.action)
+    print(args.vm)
+
+    update_dst_vfiles()
+
+    act_vagrant(args.action[0], args.vm[0])
 
 
 if __name__ == '__main__':
