@@ -105,31 +105,40 @@ def update_dst_vfiles():
         print(f" Inventory file {Path(MAIN_DIR + '/' + INVENTORY_FILENAME)} is not valid")
 
 
-def act_vagrant(action, vfile_path):
+def act_vagrant(action, vm_path):
 
-    v1 = vagrant.Vagrant(vfile_path)
+    # TODO: async
 
-    if action == "up":
-        try:
-            v1.up()
-            act_vagrant("status", vfile_path)
-            return 0
-        except:
-            print(f"{vfile_path} UP Error")
+    v1 = vagrant.Vagrant(vm_path)
+
+    vm_statuses = {
+        "up": "running",
+        "halt": "poweroff",
+        "destroy": "not_created",
+        "status": ""
+    }
+    
+    vm_status = str(v1.status()[0][1])
+    vm = vm_path[vm_path.rfind("/") + 1:]
+
+    if action not in vm_statuses.keys():
+        print(f"Invalid action {action.upper}!!")
+        return 1
+    elif action == 'status':
+        print(f'VM {vm} in {vm_status.upper()} state')
+    elif vm_statuses[action] == vm_status or action == 'halt' and vm_status != "running":
+        print(f'VM {vm} already in {vm_status.upper()} state')
+    else:
+        print(f'Attempt to apply the action {action.upper()} to the VM {vm}')
+        getattr(v1, action)()
+        vm_status = str(v1.status()[0][1])
+        if vm_statuses[action] == vm_status:
+            print(f"Completed successfully")
+        else:
+            print(f"Error, VM {vm_path} in {vm_status} state")
             return 1
-    elif action == "halt":
-        try:
-            v1.halt()
-            act_vagrant("status", vfile_path)
-            return 0
-        except:
-            act_vagrant("status", vfile_path)
-            return 1
-    elif action == "destroy":
-        v1.destroy()
-    elif action == "status":
-        print(f"{vfile_path} status:")
-        print(v1.status())
+
+    return 0
 
 
 def is_vm_exist(vm):
@@ -147,11 +156,11 @@ def main():
         update_dst_vfiles()
         if args.vm == "all":
             for vm in get_nodes_from_inventory():
-                vfile_path = VAGRANT_CATALOG + vm["hostname"]
-                act_vagrant(args.action, vfile_path)
+                vm_path = VAGRANT_CATALOG + vm["hostname"]
+                act_vagrant(args.action, vm_path)
         else:
-            vfile_path = VAGRANT_CATALOG + args.vm
-            act_vagrant(args.action, vfile_path)
+            vm_path = VAGRANT_CATALOG + args.vm
+            act_vagrant(args.action, vm_path)
     else:
         print("There is no suitable VM for actions")
 
