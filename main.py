@@ -1,4 +1,5 @@
 import os
+import threading
 from pathlib import Path
 import jsonschema
 from jsonschema import validate
@@ -6,6 +7,7 @@ import yaml
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
 import argparse
+from rich import print
 import vagrant
 
 SCHEMA = {
@@ -107,7 +109,8 @@ def update_dst_vfiles():
 
 def act_vagrant(action, vm_path):
 
-    # TODO: async
+    # TODO: threading refactor
+    # TODO: logging refactor
 
     v1 = vagrant.Vagrant(vm_path)
 
@@ -117,25 +120,32 @@ def act_vagrant(action, vm_path):
         "destroy": "not_created",
         "status": ""
     }
+
+    colors = {
+        "running": "bold green",
+        "poweroff": "bold red",
+        "not_created": "bold gray"
+    }
     
     vm_status = str(v1.status()[0][1])
-    vm = vm_path[vm_path.rfind("/") + 1:]
+    vm = f'[yellow]{vm_path[vm_path.rfind("/") + 1:]}[/yellow]'
+    formatted_status = f'[{colors[vm_status]}]{vm_status.upper()}[/{colors[vm_status]}]'
 
     if action not in vm_statuses.keys():
-        print(f"Invalid action {action.upper}!!")
+        print(f"Invalid action {action.upper()}!!")
         return 1
     elif action == 'status':
-        print(f'VM {vm} in {vm_status.upper()} state')
+        print(f'VM {vm} in {formatted_status} state')
     elif vm_statuses[action] == vm_status or action == 'halt' and vm_status != "running":
-        print(f'VM {vm} already in {vm_status.upper()} state')
+        print(f'VM {vm} already in {formatted_status} state')
     else:
         print(f'Attempt to apply the action {action.upper()} to the VM {vm}')
         getattr(v1, action)()
         vm_status = str(v1.status()[0][1])
         if vm_statuses[action] == vm_status:
-            print(f"Completed successfully")
+            print(f'VM {vm} is done')
         else:
-            print(f"Error, VM {vm_path} in {vm_status} state")
+            print(f"Error, VM {vm_path} in {formatted_status} state")
             return 1
 
     return 0
@@ -150,14 +160,21 @@ def is_vm_exist(vm):
 
 def main():
 
+    # TODO: add templates manage
+
     args = get_args()
 
     if args.vm == "all" or is_vm_exist(args.vm):
         update_dst_vfiles()
         if args.vm == "all":
+            threads = []
+            # TODO: queue
             for vm in get_nodes_from_inventory():
-                vm_path = VAGRANT_CATALOG + vm["hostname"]
-                act_vagrant(args.action, vm_path)
+                thread = threading.Thread(target=act_vagrant, args=(args.action, VAGRANT_CATALOG + vm["hostname"]))
+                thread.start()
+                threads.append(thread)
+            for thread in threads:
+                thread.join()
         else:
             vm_path = VAGRANT_CATALOG + args.vm
             act_vagrant(args.action, vm_path)
