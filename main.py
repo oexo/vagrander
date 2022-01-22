@@ -120,13 +120,14 @@ def act_vagrant(action, vm_path):
         "destroy": "not_created",
         "status": ""
     }
-
+    # TODO: add all vagrant statuses, or add the if
     colors = {
         "running": "bold green",
         "poweroff": "bold red",
-        "not_created": "bold gray"
+        "not_created": "bold gray",
+        "aborted": "bold red"
     }
-    
+
     vm_status = str(v1.status()[0][1])
     vm = f'[yellow]{vm_path[vm_path.rfind("/") + 1:]}[/yellow]'
     formatted_status = f'[{colors[vm_status]}]{vm_status.upper()}[/{colors[vm_status]}]'
