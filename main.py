@@ -1,3 +1,4 @@
+#!/usr/local/bin/python3
 import os
 import threading
 from pathlib import Path
@@ -102,6 +103,8 @@ def update_dst_vfiles():
                 create_folder(Path(vm_folder))
             if not os.path.exists(vagrant_file):
                 create_empty_file(Path(vagrant_file))
+            if 'template' in node:
+                save_template_to_file(Path(vagrant_file), render_template(node, node['template']))
             save_template_to_file(Path(vagrant_file), render_template(node))
     else:
         print(f" Inventory file {Path(MAIN_DIR + '/' + INVENTORY_FILENAME)} is not valid")

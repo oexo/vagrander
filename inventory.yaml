@@ -1,5 +1,18 @@
 ---
 nodes:
+- hostname: "myarch"
+  template: "template-arch.j2"
+  internal_ip: "192.168.56.203"
+  external_ip: 192.168.1.203
+  memory: 4096
+  cpu: 4
+
+- hostname: "django"
+  internal_ip: "192.168.56.202"
+  external_ip: 192.168.1.202
+  memory: 512
+  cpu: 1
+
 - hostname: "keycloak"
   internal_ip: "192.168.56.201"
   external_ip: 192.168.1.201
